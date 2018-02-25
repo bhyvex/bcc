@@ -23,6 +23,11 @@
 extern "C" {
 #endif
 
+enum {
+  PERF_READER_CB_NORMAL = 0,
+  PERF_READER_CB_EXITING = 1,
+};
+
 struct perf_reader;
 
 struct perf_reader * perf_reader_new(perf_reader_cb cb,

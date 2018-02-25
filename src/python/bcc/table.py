@@ -504,7 +504,8 @@ class PerfEventArray(ArrayBase):
             lib.bpf_close_perf_event_fd(self._open_key_fds[key])
         del self._open_key_fds[key]
 
-    def open_perf_buffer(self, callback, page_cnt=8, lost_cb=None):
+    def open_perf_buffer(self, callback, page_cnt=8, lost_cb=None,
+                         possible_callback_exit=False):
         """open_perf_buffers(callback)
 
         Opens a set of per-cpu ring buffer to receive custom perf event
@@ -518,12 +519,15 @@ class PerfEventArray(ArrayBase):
             raise Exception("Perf buffer page_cnt must be a power of two")
 
         for i in get_online_cpus():
-            self._open_perf_buffer(i, callback, page_cnt, lost_cb)
+            self._open_perf_buffer(i, callback, page_cnt, lost_cb, possible_callback_exit)
 
-    def _open_perf_buffer(self, cpu, callback, page_cnt, lost_cb):
-        def raw_cb_(_, data, size):
+    def _open_perf_buffer(self, cpu, callback, page_cnt, lost_cb, possible_callback_exit):
+        def raw_cb_(_, data, size, statep):
             try:
-                callback(cpu, data, size)
+                if possible_callback_exit:
+                    callback(cpu, data, size, ct.cast(statep, ct.POINTER(ct.c_int)).contents)
+                else:
+                    callback(cpu, data, size)
             except IOError as e:
                 if e.errno == errno.EPIPE:
                     exit()

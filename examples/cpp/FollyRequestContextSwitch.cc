@@ -52,7 +52,7 @@ struct event_t {
   uint64_t new_addr;
 };
 
-void handle_output(void* cb_cookie, void* data, int data_size) {
+void handle_output(void* cb_cookie, void* data, int data_size, int* state) {
   auto event = static_cast<event_t*>(data);
   std::cout << "PID " << event->pid << " (" << event->name << ") ";
   std::cout << "folly::RequestContext switch from " << event->old_addr << " to "

@@ -88,7 +88,7 @@ lib.bpf_prog_load.argtypes = [ct.c_int, ct.c_char_p, ct.c_void_p,
 lib.bpf_attach_kprobe.restype = ct.c_void_p
 _CB_TYPE = ct.CFUNCTYPE(None, ct.py_object, ct.c_int,
         ct.c_ulonglong, ct.POINTER(ct.c_ulonglong))
-_RAW_CB_TYPE = ct.CFUNCTYPE(None, ct.py_object, ct.c_void_p, ct.c_int)
+_RAW_CB_TYPE = ct.CFUNCTYPE(None, ct.py_object, ct.c_void_p, ct.c_int, ct.c_void_p)
 _LOST_CB_TYPE = ct.CFUNCTYPE(None, ct.py_object, ct.c_ulonglong)
 lib.bpf_attach_kprobe.argtypes = [ct.c_int, ct.c_int, ct.c_char_p, ct.c_char_p,
         _CB_TYPE, ct.py_object]

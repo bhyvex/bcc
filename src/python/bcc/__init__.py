@@ -99,6 +99,11 @@ class PerfType:
     HARDWARE = 0
     SOFTWARE = 1
 
+class PerfReaderCBState:
+    # From src/cc/perf_reader.h
+    PERF_READER_CB_NORMAL = 0
+    PERF_READER_CB_EXITING = 1
+
 class PerfHWConfig:
     # From perf_hw_id in uapi/linux/perf_event.h
     CPU_CYCLES = 0

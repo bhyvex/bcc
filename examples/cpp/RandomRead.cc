@@ -56,14 +56,21 @@ struct event_t {
   int got_bits;
 };
 
-void handle_output(void* cb_cookie, void* data, int data_size) {
+ebpf::BPF* bpf;
+bool test_early_exit;
+
+void handle_output(void* cb_cookie, void* data, int data_size, int* state) {
   auto event = static_cast<event_t*>(data);
   std::cout << "PID: " << event->pid << " (" << event->comm << ") on CPU "
             << event->cpu << " read " << event->got_bits << " bits"
             << std::endl;
+  if (test_early_exit) {
+    // Without setting state to PERF_READER_CB_EXITING, the program will hang
+    *state = PERF_READER_CB_EXITING;
+    delete bpf;
+    exit(0);
+  }
 }
-
-ebpf::BPF* bpf;
 
 void signal_handler(int s) {
   std::cerr << "Terminating..." << std::endl;
@@ -72,6 +79,11 @@ void signal_handler(int s) {
 }
 
 int main(int argc, char** argv) {
+  if (argc > 1) {
+    std::cout << "Testing early exit ..." << std::endl;
+    test_early_exit = true;
+  }
+
   bpf = new ebpf::BPF();
   auto init_res = bpf->init(BPF_PROGRAM);
   if (init_res.code() != 0) {

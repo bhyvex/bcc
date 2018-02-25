@@ -46,6 +46,7 @@ struct perf_reader {
   int page_size;
   int page_cnt;
   int fd;
+  int state;
   uint32_t type;
   uint64_t sample_type;
 };
@@ -64,13 +65,17 @@ struct perf_reader * perf_reader_new(perf_reader_cb cb,
   reader->fd = -1;
   reader->page_size = getpagesize();
   reader->page_cnt = page_cnt;
+  reader->state = PERF_READER_CB_NORMAL;
   return reader;
 }
 
 void perf_reader_free(void *ptr) {
   if (ptr) {
     struct perf_reader *reader = ptr;
-    while (!__sync_bool_compare_and_swap(&reader->rb_use_state, RB_NOT_USED, RB_USED_IN_MUNMAP));
+    if (reader->state == PERF_READER_CB_NORMAL)
+      while (!__sync_bool_compare_and_swap(&reader->rb_use_state, RB_NOT_USED,
+                                           RB_USED_IN_MUNMAP))
+        ;
     munmap(reader->base, reader->page_size * (reader->page_cnt + 1));
     if (reader->fd >= 0) {
       ioctl(reader->fd, PERF_EVENT_IOC_DISABLE, 0);
@@ -206,7 +211,7 @@ static void parse_sw(struct perf_reader *reader, void *data, int size) {
   }
 
   if (reader->raw_cb)
-    reader->raw_cb(reader->cb_cookie, raw->data, raw->size);
+    reader->raw_cb(reader->cb_cookie, raw->data, raw->size, &reader->state);
 }
 
 static uint64_t read_data_head(struct perf_event_mmap_page *perf_header) {

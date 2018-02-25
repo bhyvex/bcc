@@ -11,7 +11,7 @@
 # Copyright (C) 2016 Sasha Goldshtein.
 
 from __future__ import print_function
-from bcc import BPF, USDT
+from bcc import BPF, USDT, PerfReaderCBState
 from functools import partial
 from time import sleep, strftime
 import argparse
@@ -500,7 +500,7 @@ BPF_PERF_OUTPUT(%s);
                                            show_module=True, show_offset=True)
                 return self.python_format % tuple(values)
 
-        def print_event(self, bpf, cpu, data, size):
+        def print_event(self, bpf, cpu, data, size, state):
                 # Cast as the generated structure type and display
                 # according to the format string in the probe.
                 event = ct.cast(data, ct.POINTER(self.python_struct)).contents
@@ -527,6 +527,7 @@ BPF_PERF_OUTPUT(%s);
                 Probe.event_count += 1
                 if Probe.max_events is not None and \
                    Probe.event_count >= Probe.max_events:
+                        state.value = PerfReaderCBState.PERF_READER_CB_EXITING
                         exit()
 
         def attach(self, bpf, verbose):
@@ -537,7 +538,8 @@ BPF_PERF_OUTPUT(%s);
                 self.python_struct = self._generate_python_data_decl()
                 callback = partial(self.print_event, bpf)
                 bpf[self.events_name].open_perf_buffer(callback,
-                        page_cnt=self.page_cnt)
+                        page_cnt=self.page_cnt, lost_cb=None,
+                        possible_callback_exit=True)
 
         def _attach_k(self, bpf):
                 if self.probe_type == "r":
